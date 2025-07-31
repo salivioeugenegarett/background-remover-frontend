@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Background Remover</title>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 40px; }
+    img { max-width: 300px; margin-top: 20px; display: none; }
+  </style>
+</head>
+<body>
+  <h2>Upload a photo to remove background</h2>
+  <form id="uploadForm">
+    <input type="file" id="fileInput" accept="image/*" />
+    <button type="submit">Remove Background</button>
+  </form>
+  <img id="result" />
+
+  <script>
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert("Select a file first!");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("https://background-remover-backend-jpsx.onrender.com", {
+        method: "POST",
+        body: formData
+      });
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const img = document.getElementById("result");
+      img.src = url;
+      img.style.display = "block";
+    };
+  </script>
+</body>
+</html>
