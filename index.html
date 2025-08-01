@@ -6,6 +6,7 @@
     body { font-family: Arial; text-align: center; padding: 40px; }
     img { max-width: 300px; margin-top: 20px; display: none; }
     #downloadBtn { margin-top: 10px; display: none; }
+    #loadingMessage { margin-top: 20px; color: #555; display: none; }
   </style>
 </head>
 <body>
@@ -14,44 +15,65 @@
     <input type="file" id="fileInput" accept="image/*" />
     <button type="submit">Remove Background</button>
   </form>
+
+  <p id="loadingMessage">Processing image, please wait...</p>
+  
   <img id="result" />
   <button id="downloadBtn">Download Image</button>
 
   <script>
-document.getElementById('uploadForm').onsubmit = async (e) => {
-  e.preventDefault();
-  const file = document.getElementById('fileInput').files[0];
-  if (!file) return alert("Select a file first!");
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) {
+        alert("Select a file first!");
+        return;
+      }
 
-  const formData = new FormData();
-  formData.append("file", file);
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const img = document.getElementById("result");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const loadingMessage = document.getElementById("loadingMessage");
+      
+      img.style.display = "none";
+      downloadBtn.style.display = "none";
+      loadingMessage.style.display = "block";
+      
+      try {
+        const res = await fetch("https://background-remover-backend-jpsx.onrender.com/remove-bg", {
+          method: "POST",
+          body: formData
+        });
 
-  const res = await fetch("https://background-remover-backend-jpsx.onrender.com/remove-bg", {
-    method: "POST",
-    body: formData
-  });
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
 
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const img = document.getElementById("result");
-  const downloadBtn = document.getElementById("downloadBtn");
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        
+        loadingMessage.style.display = "none";
 
-  // Display the edited image
-  img.src = url;
-  img.style.display = "block";
+        img.src = url;
+        img.style.display = "block";
 
-  // Show the download button
-  downloadBtn.style.display = "block";
-  downloadBtn.onclick = () => {
-    // Create a temporary anchor element
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "background_removed_image.png"; // Set the desired file name
-    document.body.appendChild(a);
-    a.click(); // Programmatically click the link to trigger the download
-    document.body.removeChild(a); // Clean up the temporary link
-  };
-};
+        downloadBtn.style.display = "block";
+        downloadBtn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "background_removed_image.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        };
+        
+      } catch (error) {
+        console.error("Error removing background:", error);
+        loadingMessage.innerText = "An error occurred. Please try again.";
+      }
+    };
   </script>
 </body>
 </html>
